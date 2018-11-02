@@ -183,7 +183,8 @@ pub fn base64_encode(bytes: Vec<u8>) -> Result<String, EncodingError> {
 /// The original byte vector. Otherwise an `EncodingError`
 pub fn base64_decode(string: &str) -> Result<Vec<u8>, EncodingError> {
     debug!("Base64 decode string {} of len {}", string, string.len());
-    let mut iter = string.chars();
+    let sanitized_string = string.replace("\n", "");
+    let mut iter = sanitized_string.chars();
     let mut out: Vec<u8> = Vec::new();
     loop {
         // we consider 4 bytes at a time
