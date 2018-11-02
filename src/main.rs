@@ -4,6 +4,7 @@ extern crate colored;
 
 pub mod common;
 pub mod one;
+pub mod three;
 pub mod two;
 
 use colored::*;
@@ -19,6 +20,11 @@ fn main() {
         "686974207468652062756c6c277320657965",
         "746865206b696420646f6e277420706c6179",
     );
+
+    challenge_three(
+        "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
+        1,
+    )
 }
 
 fn challenge_one(hex: &str, test_string: &str) {
@@ -86,4 +92,34 @@ fn challenge_two(hex: &str, key: &str, test_string: &str) {
         "Xorred string is wrong".red().bold()
     );
     println!("{}", "Succesfully XORed string!".green().bold());
+}
+
+fn challenge_three(input: &str, min_trigrams: u8) {
+    let input_hex = common::string_to_hex(input).expect("Could not turn input into byte vec");
+    let matches = three::bruteforce(input_hex.as_slice(), min_trigrams, false)
+        .expect("Could not bruteforce string");
+    println!(
+        "{} {} {}",
+        "Found".blue(),
+        matches.len(),
+        "potential matches".blue()
+    );
+
+    for cur in &matches {
+        println!(
+            "{} {}: {} {}",
+            "Match ".blue(),
+            cur.msg.blue(),
+            cur.key,
+            cur.trigrams
+        );
+    }
+
+    assert_eq!(
+        matches[0].key,
+        88,
+        "{}",
+        "Could not find string".red().bold()
+    );
+    println!("{}", "Succesfully found XOR key!".green().bold());
 }
