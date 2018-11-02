@@ -7,17 +7,20 @@ pub mod one;
 use colored::*;
 
 fn main() {
-    challenge_one("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
+    challenge_one(
+        "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d",
+        "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
+    );
 }
 
-fn challenge_one(test_string: &str) {
+fn challenge_one(hex: &str, test_string: &str) {
     println!("{}", "Starting exercise one - base64 encoding".blue());
     println!(
         "{} {}",
         "Encoding hex String:".blue(),
-        test_string.blue().bold()
+        hex.blue().bold()
     );
-    let hex_string = one::string_to_hex(test_string).expect("Could not convert string");
+    let hex_string = one::string_to_hex(hex).expect("Could not convert string");
     let hex_len = hex_string.len();
     let output = one::base64_encode(hex_string).expect("Could not base64 encode");
     println!(
@@ -27,7 +30,7 @@ fn challenge_one(test_string: &str) {
     );
     assert_eq!(
         output.as_str(),
-        "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t",
+        test_string,
         "{}",
         "Could not encode string".red().bold()
     );
@@ -48,7 +51,7 @@ fn challenge_one(test_string: &str) {
         decoded_string.blue().bold()
     );
     assert_eq!(
-        test_string,
+        hex,
         decoded_string,
         "{}",
         "Could not decode string".red().bold()
