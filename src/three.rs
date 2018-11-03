@@ -47,7 +47,8 @@ pub fn bruteforce(
         }
         let trigrams = count_trigrams(&out_string);
 
-        if trigrams >= min_trigrams {
+        // TODO: Must contain at least one space. Not sure this is a good rule.
+        if trigrams >= min_trigrams && out_string.contains(' ') {
             out.push(Decrypted {
                 msg: out_string,
                 trigrams,

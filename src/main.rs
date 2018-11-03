@@ -1,30 +1,47 @@
 #[macro_use]
 extern crate log;
 extern crate colored;
+extern crate elapsed;
 
 pub mod common;
+pub mod four;
 pub mod one;
 pub mod three;
 pub mod two;
 
 use colored::*;
+use elapsed::measure_time;
 
 fn main() {
-    challenge_one(
-        "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d",
-        "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
-    );
+    let (elapsed, _sum) = measure_time(|| {
+        challenge_one(
+            "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d",
+            "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t",
+        );
+    });
+    println!("Executed test one in {}", elapsed);
 
-    challenge_two(
-        "1c0111001f010100061a024b53535009181c",
-        "686974207468652062756c6c277320657965",
-        "746865206b696420646f6e277420706c6179",
-    );
+    let (elapsed, _sum) = measure_time(|| {
+        challenge_two(
+            "1c0111001f010100061a024b53535009181c",
+            "686974207468652062756c6c277320657965",
+            "746865206b696420646f6e277420706c6179",
+        );
+    });
+    println!("Executed test two in {}", elapsed);
 
-    challenge_three(
-        "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
-        1,
-    )
+    let (elapsed, _sum) = measure_time(|| {
+        challenge_three(
+            "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
+            1,
+        );
+    });
+    println!("Executed test three in {}", elapsed);
+
+    let (elapsed, _sum) = measure_time(|| {
+        challenge_four("./resources/four.txt", 3);
+    });
+    println!("Executed test four in {}", elapsed);
 }
 
 fn challenge_one(hex: &str, test_string: &str) {
@@ -122,4 +139,36 @@ fn challenge_three(input: &str, min_trigrams: u8) {
         "Could not find string".red().bold()
     );
     println!("{}", "Succesfully found XOR key!".green().bold());
+}
+
+fn challenge_four(path: &str, min_trigrams: u8) {
+    let matches =
+        four::find_encrypted_string(path, min_trigrams).expect("Could not find any matches");
+    println!(
+        "{} {} {}",
+        "Found".blue(),
+        matches.len(),
+        "potential matches".blue()
+    );
+
+    for cur in &matches {
+        println!(
+            "{} {}: {} {}",
+            "Match ".blue(),
+            cur.msg.blue(),
+            cur.key,
+            cur.trigrams
+        );
+    }
+
+    assert_eq!(
+        matches[0].key,
+        53,
+        "{}",
+        "Could not find string".red().bold()
+    );
+    println!(
+        "{}",
+        "Succesfully found encrypted string key!".green().bold()
+    );
 }

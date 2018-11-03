@@ -7,3 +7,4 @@ authors = ["sapessi <stefano.buliani@gmail.com>"]
 log = "0.4.6"
 simple_logger = "1.0.1"
 colored = "1.6.1"
+elapsed = "0.1.2"
