@@ -6,4 +6,7 @@ Challenges from [CryptoPals](https://cryptopals.com) in Rust. I'm slowly going t
 $ git clone https://github.com/SAPessi/cryptopals.git
 $ cd cryptopals
 $ cargo run
+
+# you can also run the challenges as tests with
+$ cargo test
 ```
