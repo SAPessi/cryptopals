@@ -1,5 +1,10 @@
 use std::error;
+use std::error::Error;
 use std::fmt;
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::path::Path;
 
 /// Max length of a line in a base64 encoded string
 const B64_MAX_LINE_LENGTH: usize = 76;
@@ -53,6 +58,14 @@ impl error::Error for EncodingError {
     fn cause(&self) -> Option<&error::Error> {
         // Generic error, underlying cause isn't tracked.
         None
+    }
+}
+
+/// Simple implementation of the `From` trait to generate an `EncodingError`
+/// from an `std::io::Error`.
+impl From<io::Error> for EncodingError {
+    fn from(e: io::Error) -> Self {
+        EncodingError::new(e.description())
     }
 }
 
@@ -131,6 +144,16 @@ pub fn hex_to_string(hex: &[u8]) -> Result<String, EncodingError> {
     }
 
     Ok(out)
+}
+
+pub fn get_file_contents(path: &str) -> Result<String, EncodingError> {
+    let file_path = Path::new(path);
+    let mut strings_file = File::open(file_path)?;
+
+    let mut file_content = String::from("");
+    strings_file.read_to_string(&mut file_content)?;
+
+    Ok(file_content)
 }
 
 /// Converts a single short value (`u8`) into its char representation

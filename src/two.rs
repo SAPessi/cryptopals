@@ -58,7 +58,7 @@ pub fn xor_bytes(bytes: &[u8], key: &[u8]) -> Result<Vec<u8>, EncodingError> {
 ///
 /// # Return
 /// A `Vec` of bits from the original byte
-fn byte_to_bits(byte: u8) -> Vec<u8> {
+pub fn byte_to_bits(byte: u8) -> Vec<u8> {
     (0u8..8).map(move |i| (byte >> i) & 1).collect::<Vec<u8>>()
 }
 

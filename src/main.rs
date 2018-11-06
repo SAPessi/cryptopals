@@ -8,11 +8,13 @@ pub mod common;
 pub mod five;
 pub mod four;
 pub mod one;
+pub mod six;
 pub mod three;
 pub mod two;
 
 use colored::*;
 use elapsed::measure_time;
+use std::error::Error;
 
 fn main() {
     simple_logger::init_with_level(log::Level::Warn).unwrap();
@@ -33,13 +35,10 @@ fn main() {
     });
 
     start_challenge("three", || {
-        challenge_three(
-            "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
-            1,
-        )
+        challenge_three("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
     });
 
-    start_challenge("four", || challenge_four("./resources/four.txt", 3));
+    start_challenge("four", || challenge_four("./resources/four.txt"));
 
     start_challenge("five", || {
         challenge_five(
@@ -47,7 +46,9 @@ fn main() {
             "ICE",
             "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272\na282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f",
         )
-    })
+    });
+
+    start_challenge("six", || challenge_six("./resources/six.txt"));
 }
 
 fn start_challenge<F: FnOnce() -> bool>(name: &str, f: F) {
@@ -114,9 +115,9 @@ fn challenge_two(hex: &str, key: &str, test_string: &str) -> bool {
     true
 }
 
-fn challenge_three(input: &str, min_trigrams: u8) -> bool {
+fn challenge_three(input: &str) -> bool {
     let input_hex = common::string_to_hex(input).expect("Could not turn input into byte vec");
-    let matches = three::bruteforce(input_hex.as_slice(), min_trigrams, false)
+    let matches = three::bruteforce(input_hex.as_slice(), three::english_distance)
         .expect("Could not bruteforce string");
     debug!("Found {} potential matches", matches.len(),);
 
@@ -125,7 +126,7 @@ fn challenge_three(input: &str, min_trigrams: u8) -> bool {
             "Matched message: \"{}\"\n\tMessage used key: {}\n\tMessage contained {} trigrams",
             cur.msg.blue(),
             cur.key,
-            cur.trigrams
+            cur.score
         );
     }
 
@@ -137,18 +138,17 @@ fn challenge_three(input: &str, min_trigrams: u8) -> bool {
     true
 }
 
-fn challenge_four(path: &str, min_trigrams: u8) -> bool {
+fn challenge_four(path: &str) -> bool {
     debug!("Looking for encrypted strings in {}", path);
-    let matches =
-        four::find_encrypted_string(path, min_trigrams).expect("Could not find any matches");
+    let matches = four::find_encrypted_string(path).expect("Could not find any matches");
     debug!("Found {} potential matches", matches.len(),);
 
     for cur in &matches {
         debug!(
-            "Matched message: \"{}\"\n\tMessage used key: {}\n\tMessage contained {} trigrams",
+            "Matched message: \"{}\"\n\tMessage used key: {}\n\tHemming distance {}",
             cur.msg.blue(),
             cur.key,
-            cur.trigrams
+            cur.score
         );
     }
 
@@ -173,8 +173,8 @@ fn challenge_five(input: &str, key: &str, test_string: &str) -> bool {
     let encrypted_bytes =
         two::xor_bytes(input_bytes, extended_key.as_slice()).expect("Could not encrypt input");
 
-    let encrypted_hex = common::hex_to_string(encrypted_bytes.as_slice())
-        .expect("Could not convert hex to string");
+    let encrypted_hex =
+        common::hex_to_string(encrypted_bytes.as_slice()).expect("Could not convert hex to string");
 
     if encrypted_hex != test_string.replace('\n', "") {
         error!(
@@ -199,6 +199,70 @@ fn challenge_five(input: &str, key: &str, test_string: &str) -> bool {
         return false;
     }
     true
+}
+
+fn challenge_six(input_path: &str) -> bool {
+    // first test, are we calculating the distance correctly?
+    let first = "this is a test";
+    let second = "wokka wokka!!!";
+
+    let distance = six::string_distance(first, second);
+    if distance != 37 {
+        error!("Distance between test strings is not 37: {}", distance);
+        return false;
+    }
+    let input = common::get_file_contents(input_path);
+    if input.is_err() {
+        error!(
+            "Could not read input file: {}",
+            input.err().unwrap().description()
+        );
+        return false;
+    }
+    let decoded_input =
+        one::base64_decode(input.unwrap().as_str()).expect("Could not base64 decode error");
+    let keys =
+        six::find_key_len(2, 40, decoded_input.as_slice()).expect("Could not determine key len");
+    debug!("Found {} potential keys", keys.len());
+    let mut max_dist = 1.1;
+    for key in keys {
+        debug!(
+            "Attempting key of len {} with blocks distance {}",
+            key.key_length, key.blocks_distance
+        );
+        let transposed_input = six::transpose_input(decoded_input.as_slice(), key.key_length);
+        debug!(
+            "Number of blocks: {} of size: {}",
+            transposed_input.len(),
+            transposed_input[0].len()
+        );
+
+        let xor_key = six::find_key(transposed_input).expect("Could not find key");
+        let key_string = String::from_utf8(xor_key.clone()).unwrap_or_else(|_| "".to_string());
+        debug!("Found potential key: {}", key_string);
+
+        let repeated_key = five::repeat_key(decoded_input.len(), xor_key.as_slice());
+        let decrypted_content = two::xor_bytes(decoded_input.as_slice(), repeated_key.as_slice())
+            .expect("Could not decrypt content");
+        let decrypted_string = String::from_utf8(decrypted_content)
+            .expect("Could not turn decrypted bytes into string");
+
+        let dist = three::english_distance(decrypted_string.as_str());
+        debug!("Decrypted string distance: {}", dist);
+        if dist > max_dist {
+            max_dist = dist;
+            let print_string: String = decrypted_string.chars().take(20).collect();
+            debug!("Decrypted string {} with key {}", print_string, key_string);
+
+            if key_string == "Terminator X: Bring the noise"
+                && decrypted_string.starts_with("I'm back and I'm")
+            {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 #[cfg(test)]
@@ -227,13 +291,12 @@ mod tests {
     fn challenge_three() {
         assert!(super::challenge_three(
             "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
-            1,
         ));
     }
 
     #[test]
     fn challenge_four() {
-        assert!(super::challenge_four("./resources/four.txt", 3));
+        assert!(super::challenge_four("./resources/four.txt"));
     }
 
     #[test]
@@ -243,5 +306,10 @@ mod tests {
             "ICE",
             "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272\na282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f",
         ));
+    }
+
+    #[test]
+    fn challenge_six() {
+        assert!(super::challenge_six("./resources/six.txt"));
     }
 }

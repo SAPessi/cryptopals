@@ -115,6 +115,9 @@ pub fn base64_decode(string: &str) -> Result<Vec<u8>, EncodingError> {
 /// The position of the character in the base64 chars array. An
 /// `EncodingError` if the character could not be found.
 fn get_char_position(c: char) -> Result<u8, EncodingError> {
+    if c == '=' {
+        return Ok(b'0');
+    }
     for (cnt, cur) in B64_CHARS.iter().enumerate() {
         if cur == &c {
             return Ok(cnt as u8);
