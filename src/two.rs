@@ -1,4 +1,32 @@
+use common;
 use common::EncodingError;
+
+/// executes the second challenge: Write a function that takes two equal-length buffers and produces their XOR combination.
+///
+/// # Arguments
+/// * `hex` The headecimal string to be XOR-ed
+/// * `key` The key to use in the XOR
+/// * `test_string` The string to test the output
+///
+/// # Return
+/// `true` if the XOR-ed string matches the given `test_string`.
+pub fn challenge_two(hex: &str, key: &str, test_string: &str) -> bool {
+    debug!("XORing {} with key: {}", hex, key);
+    let hex_vec = common::string_to_hex(hex).expect("Could not change hex to vector");
+    let key_vec = common::string_to_hex(key).expect("Could not change key to vector");
+
+    let xor = xor_bytes(hex_vec.as_slice(), key_vec.as_slice()).expect("Could not Xor");
+    debug!("XOR vector length {}", xor.len());
+    let xor_string =
+        common::hex_to_string(xor.as_slice()).expect("Could not convert xor vector to string");
+    debug!("XORed string: {}", xor_string);
+    if xor_string.as_str() != test_string {
+        return false;
+    }
+    debug!("Succesfully XORed string!");
+
+    true
+}
 
 /// Simple XOR algorithm given a bytes array and a key of the same length to apply to each byte.
 ///

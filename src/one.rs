@@ -1,3 +1,4 @@
+use common;
 use common::{Base64String, EncodingError};
 
 /// Array of valid characters kn base64 in the correct order
@@ -7,6 +8,44 @@ static B64_CHARS: &'static [char; 64] = &[
     'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4',
     '5', '6', '7', '8', '9', '+', '/',
 ];
+
+/// Executes the first challenge: Convert hex to base64
+///
+/// # Arguments
+/// * `hex` The hexadecimal string to be base64-encoded
+/// * `test_string` The output string to test against
+///
+/// # Return
+/// `true` if the base64 output matches the given `test_string`
+pub fn challenge_one(hex: &str, test_string: &str) -> bool {
+    debug!("Starting exercise one - base64 encoding");
+    debug!("Encoding hex String: {}", hex);
+    let hex_string = common::string_to_hex(hex).expect("Could not convert string");
+    let hex_len = hex_string.len();
+    let output = base64_encode(hex_string).expect("Could not base64 encode");
+    debug!("Generaged encoded string: {}", output,);
+    if output.as_str() != test_string {
+        return false;
+    }
+    debug!("Succesfully encoded string!");
+
+    debug!("Attempting to decode string again");
+    let decoded_vec = base64_decode(&output).expect("Could not decode");
+    debug!(
+        "Decoded len: {}. Original len: {}",
+        decoded_vec.len(),
+        hex_len
+    );
+    let decoded_string =
+        common::hex_to_string(decoded_vec.as_slice()).expect("Could not turn vector to string");
+    debug!("Decoded string: {}", decoded_string);
+    if hex != decoded_string {
+        return false;
+    }
+    debug!("Succesfully decoded string!");
+
+    true
+}
 
 /// Naive base64 encoding implementation. Encodes a byte vector into a base64 string
 ///

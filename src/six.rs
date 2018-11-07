@@ -1,9 +1,84 @@
+use common;
 use common::EncodingError;
+use five;
+use one;
 use std::collections::HashMap;
+use std::error::Error;
 use std::i32;
 use std::u8;
 use three;
 use two;
+
+/// Executes challenge six: Break repeating key XOR
+///
+/// # Arguments
+/// * `input_path` Path to the file containing the base64-encoded content
+/// * `test_key` The key to test the discovered key against
+/// * `test_content_start` The first few characters of the decrypted content to test against
+///
+/// # Return
+/// `true` if the discovered key matches the given `test_key` and the content starts with
+/// the given `test_content_start`.
+pub fn challenge_six(input_path: &str, test_key: &str, test_content_start: &str) -> bool {
+    // first test, are we calculating the distance correctly?
+    let first = "this is a test";
+    let second = "wokka wokka!!!";
+
+    let distance = string_distance(first, second);
+    if distance != 37 {
+        error!("Distance between test strings is not 37: {}", distance);
+        return false;
+    }
+    let input = common::get_file_contents(input_path);
+    if input.is_err() {
+        error!(
+            "Could not read input file: {}",
+            input.err().unwrap().description()
+        );
+        return false;
+    }
+    let decoded_input =
+        one::base64_decode(input.unwrap().as_str()).expect("Could not base64 decode error");
+    let keys = find_key_len(2, 40, decoded_input.as_slice()).expect("Could not determine key len");
+    debug!("Found {} potential keys", keys.len());
+    let mut max_dist = 1.1;
+    for key in keys {
+        debug!(
+            "Attempting key of len {} with blocks distance {}",
+            key.key_length, key.blocks_distance
+        );
+        let transposed_input = transpose_input(decoded_input.as_slice(), key.key_length);
+        debug!(
+            "Number of blocks: {} of size: {}",
+            transposed_input.len(),
+            transposed_input[0].len()
+        );
+
+        let xor_key = find_key(transposed_input).expect("Could not find key");
+        let key_string = String::from_utf8(xor_key.clone()).unwrap_or_else(|_| "".to_string());
+        debug!("Found potential key: {}", key_string);
+
+        let repeated_key = five::repeat_key(decoded_input.len(), xor_key.as_slice());
+        let decrypted_content = two::xor_bytes(decoded_input.as_slice(), repeated_key.as_slice())
+            .expect("Could not decrypt content");
+        let decrypted_string = String::from_utf8(decrypted_content)
+            .expect("Could not turn decrypted bytes into string");
+
+        let dist = three::english_distance(decrypted_string.as_str());
+        debug!("Decrypted string distance: {}", dist);
+        if dist > max_dist {
+            max_dist = dist;
+            let print_string: String = decrypted_string.chars().take(20).collect();
+            debug!("Decrypted string {} with key {}", print_string, key_string);
+
+            if key_string == test_key && decrypted_string.starts_with(test_content_start) {
+                return true;
+            }
+        }
+    }
+
+    false
+}
 
 /// Structure that represents a possible key length and the bit distance
 /// between the blocks analyzed for the key

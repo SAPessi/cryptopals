@@ -1,3 +1,4 @@
+use common;
 use common::EncodingError;
 use std::cmp;
 use std::collections::HashMap;
@@ -8,6 +9,35 @@ static TRIGRAMS: &[&str; 16] = &[
     "the", "and", "tha", "ent", "ing", "ion", "tio", "for", "nde", "has", "nce", "edt", "tis",
     "oft", "sth", "men",
 ];
+
+/// Executes challenge three: Single-byte XOR - has been XOR'd against a single character. Find the key, decrypt the message.
+///
+/// # Arguments
+/// * `input` The hex representation of the XOR-ed string
+/// * `test_key` The expected key
+///
+/// # Return
+/// `true` if the guessed key matches the provided `test_key`
+pub fn challenge_three(input: &str, test_key: u8) -> bool {
+    let input_hex = common::string_to_hex(input).expect("Could not turn input into byte vec");
+    let matches =
+        bruteforce(input_hex.as_slice(), english_distance).expect("Could not bruteforce string");
+    debug!("Found {} potential matches", matches.len(),);
+
+    for cur in &matches {
+        debug!(
+            "Matched message: \"{}\"\n\tMessage used key: {}\n\tMessage contained {} trigrams",
+            cur.msg, cur.key, cur.score
+        );
+    }
+
+    if matches[0].key != test_key {
+        return false;
+    }
+    debug!("Succesfully found XOR key!");
+
+    true
+}
 
 /// Struct to represent a potential match from the bruteforce algorithm
 #[derive(Clone)]

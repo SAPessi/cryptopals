@@ -1,5 +1,24 @@
+use common;
 use common::EncodingError;
+use one;
 use openssl::symm;
+
+/// Executes challenge seven: Decrypt cipher with AES in ECB mode
+///
+/// # Arguments
+/// * `path` The path to the file containing the base64-encoded cipher
+/// * `key` The key used to encrypt the content
+/// * `test_content_start` The first few characters to test the decrypted content against
+///
+/// # Return
+/// `true` if the decrypted string starts with the given `test_content_start`
+pub fn challenge_seven(path: &str, key: &str, test_content_start: &str) -> bool {
+    let base64_content = common::get_file_contents(path).expect("Could not read input file");
+    let bytes = one::base64_decode(base64_content.as_str()).expect("Could not decode content");
+    let decrypted = decrypt(bytes.as_slice(), key.as_bytes()).expect("Could not decrypt content");
+
+    decrypted.starts_with(test_content_start)
+}
 
 /// Uses AWS 128 bit ECB to decrypt a cipher
 ///
