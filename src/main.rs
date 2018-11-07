@@ -2,12 +2,15 @@
 extern crate log;
 extern crate colored;
 extern crate elapsed;
+extern crate openssl;
 extern crate simple_logger;
 
 pub mod common;
+pub mod eight;
 pub mod five;
 pub mod four;
 pub mod one;
+pub mod seven;
 pub mod six;
 pub mod three;
 pub mod two;
@@ -49,6 +52,12 @@ fn main() {
     });
 
     start_challenge("six", || challenge_six("./resources/six.txt"));
+
+    start_challenge("seven", || {
+        challenge_seven("./resources/seven.txt", "YELLOW SUBMARINE")
+    });
+
+    start_challenge("eight", || challenge_eight("./resources/eight.txt"));
 }
 
 fn start_challenge<F: FnOnce() -> bool>(name: &str, f: F) {
@@ -265,6 +274,31 @@ fn challenge_six(input_path: &str) -> bool {
     false
 }
 
+fn challenge_seven(path: &str, key: &str) -> bool {
+    let base64_content = common::get_file_contents(path).expect("Could not read input file");
+    let bytes = one::base64_decode(base64_content.as_str()).expect("Could not decode content");
+    let decrypted =
+        seven::decrypt(bytes.as_slice(), key.as_bytes()).expect("Could not decrypt content");
+
+    decrypted.starts_with("I'm back and I'm ringin' the bell")
+}
+
+fn challenge_eight(path: &str) -> bool {
+    let file_contents = common::get_file_contents(path).expect("Could not load input file");
+    let mut repeated = 0;
+    for (cnt, line) in file_contents.split('\n').enumerate() {
+        let line_bytes = common::string_to_hex(line).expect("Could not convert hex to byte slice");
+        let repetitions = eight::count_block_repetitions(line_bytes.as_slice())
+            .expect("Could not determine if ECB");
+        if repetitions > 1 {
+            repeated = cnt;
+            debug!("Line {} repeats chunks {} times", line, repetitions);
+        }
+    }
+
+    repeated == 132
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -311,5 +345,18 @@ mod tests {
     #[test]
     fn challenge_six() {
         assert!(super::challenge_six("./resources/six.txt"));
+    }
+
+    #[test]
+    fn challenge_seven() {
+        assert!(super::challenge_seven(
+            "./resources/seven.txt",
+            "YELLOW SUBMARINE"
+        ));
+    }
+
+    #[test]
+    fn challenge_eight() {
+        assert!(super::challenge_eight("./resources/eight.txt"));
     }
 }

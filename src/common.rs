@@ -1,3 +1,4 @@
+use openssl;
 use std::error;
 use std::error::Error;
 use std::fmt;
@@ -5,6 +6,7 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 use std::path::Path;
+use std::string;
 
 /// Max length of a line in a base64 encoded string
 const B64_MAX_LINE_LENGTH: usize = 76;
@@ -65,6 +67,31 @@ impl error::Error for EncodingError {
 /// from an `std::io::Error`.
 impl From<io::Error> for EncodingError {
     fn from(e: io::Error) -> Self {
+        EncodingError::new(e.description())
+    }
+}
+
+/// Creates an EncodingError from an OpenSSL error stack
+impl From<openssl::error::ErrorStack> for EncodingError {
+    fn from(e: openssl::error::ErrorStack) -> Self {
+        let mut desc = String::from(e.description());
+        for err in e.errors() {
+            let new_desc = format!(
+                "{}\n{}-{}:{}",
+                desc.clone(),
+                err.library().unwrap_or(""),
+                err.file(),
+                err.line()
+            );
+            desc = new_desc;
+        }
+        EncodingError::new(desc.as_str())
+    }
+}
+
+/// Creates an EncodingError from an OpenSSL error stack
+impl From<string::FromUtf8Error> for EncodingError {
+    fn from(e: string::FromUtf8Error) -> Self {
         EncodingError::new(e.description())
     }
 }
